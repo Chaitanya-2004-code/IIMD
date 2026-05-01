@@ -1,0 +1,46 @@
+=========================================================
+# Docker Commands Reference Script
+
+# --- Check if Docker is working fine ---
+docker version
+
+# --- Download an image ---
+docker images
+docker pull nginx:latest
+docker images
+
+# --- Start a container from the image ---
+docker run --name test -d -p 8080:80 nginx:latest
+# Open in browser: http://localhost:8080
+docker ps
+
+# --- Execute a command inside the container ---
+docker exec -it test /bin/bash
+ls
+exit
+
+# --- Delete the container ---
+docker ps
+docker stop test
+docker rm test
+docker ps -a
+
+# --- Common base images and services ---
+# Ubuntu (Base OS)
+docker run -it ubuntu
+
+# Nginx (Web server)
+docker run -d -p 80:80 nginx
+
+# MySQL (Database)
+docker run -d -e MYSQL_ROOT_PASSWORD=1234 mysql
+
+# MongoDB (NoSQL DB)
+docker run -d -p 27017:27017 mongo
+
+# Python (Runtime)
+docker run -it python
+
+# --- Cleanup: Deletes ALL stopped containers ---
+docker container prune
+
