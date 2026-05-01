@@ -1,0 +1,162 @@
+
+#=================Compose files yml files==============================
+#------------------- Q1. Docker Compose: Nginx Static Website -------------------
+
+# Step 1: Create folder and HTML file
+mkdir website
+cd website
+echo "Hello from Docker Compose" > index.html
+
+# Step 2: Create docker-compose.yml
+vim docker-compose
+
+version: '3'
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./website:/usr/share/nginx/html
+# -----------------------
+
+# Step 3: Run Docker Compose
+docker-compose up -d
+
+# Step 4: Verify output
+# Open browser at http://localhost:8080
+# Expected Output: Hello from Docker Compose
+
+
+#------------------- Q2. Docker Compose: Python Script Container -------------------
+
+# Step 1: Create Python script
+vim app.py
+print("Hello from Python Container")
+
+# Step 2: Create Dockerfile
+FROM	python:3.9-slim
+WORKDIR	/app
+COPY	app.py .
+CMD	["python", "app.py"]
+
+# Step 3: Create docker-compose.yml
+
+vim docker-compose.yml
+
+version: '3'
+services:
+  python-app:
+    build: .
+# -----------------------
+# Step 4: Run Docker Compose
+docker-compose up
+
+# Expected Output:
+# Hello from Python Container
+
+
+#------------------- Q3. Docker Compose: MySQL with Volume -------------------
+
+# Step 1: Create docker-compose.yml
+vim docker-compose.yml
+
+version: '3'
+services:
+  mysql:
+    image: mysql:8
+    container_name: my-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: cdac
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:
+# -------------------------------------------------
+
+# Step 2: Start container
+docker-compose up -d
+
+# Step 3: Enter MySQL inside container
+docker exec -it my-mysql mysql -uroot -p
+
+# Step 4: Run SQL commands
+CREATE TABLE test (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(100));
+INSERT INTO test (name) VALUES ('Amit');
+SELECT * FROM test;
+exit;
+
+# Step 5: Restart container
+docker-compose down
+docker-compose up -d
+
+# Step 6: Verify data persists
+docker exec -it my-mysql mysql -uroot -p
+USE cdac;
+SELECT * FROM test;
+
+
+
+#------------------- Q4. Docker Compose: One Volume with 3 Nginx Containers -------------------
+
+# Goal:
+# Run three Nginx containers (nginx1, nginx2, nginx3) that share a single volume
+# Each container serves different HTML content on different ports
+
+# Step 1: Create a Docker volume
+docker volume create shared-data
+
+# Step 2: Create docker-compose.yml
+vim docker-compose.yml
+
+version: '3'
+services:
+  nginx1:
+    image: nginx:alpine
+    container_name: nginx1
+    ports:
+      - "8081:80"
+    volumes:
+      - shared-data:/usr/share/nginx/html
+    command: /bin/sh -c "echo 'Hello from Container 1' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
+
+  nginx2:
+    image: nginx:alpine
+    container_name: nginx2
+    ports:
+      - "8082:80"
+    volumes:
+      - shared-data:/usr/share/nginx/html
+    command: /bin/sh -c "echo 'Hello from Container 2' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
+
+  nginx3:
+    image: nginx:alpine
+    container_name: nginx3
+    ports:
+      - "8083:80"
+    volumes:
+      - shared-data:/usr/share/nginx/html
+    command: /bin/sh -c "echo 'Hello from Container 3' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'"
+
+volumes:
+  shared-data:
+# -------------------------------------------------
+
+# Step 3: Run Docker Compose
+docker-compose up -d
+
+# Step 4: Verify output in browser
+# Visit each container on its port:
+# http://localhost:8081 → Hello from Container 1
+# http://localhost:8082 → Hello from Container 2
+# http://localhost:8083 → Hello from Container 3
+
+# Step 5: Clean up (optional)
+docker-compose down
+docker volume rm shared-data
+
+

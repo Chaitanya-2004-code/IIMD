@@ -1,0 +1,224 @@
+
+#-------------------MySQL MySQL my sql with docker volume-----------------
+# Create volume for persistent storage
+docker volume create mysql-data
+
+# Run MySQL container with volume
+docker run -d --name my-MySQL -e MYSQL_ROOT_PASSWORD=root123 -v mysql-data:/var/lib/mysql 
+-p 3306:3306 mysql:8	
+
+
+# Connect to MySQL inside container
+docker exec -it my-mysql mysql -uroot -p
+
+# Run these SQL commands line by line
+CREATE DATABASE cdac;
+USE cdac;
+CREATE TABLE IF NOT EXISTS student (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100),
+  score INT
+);
+INSERT INTO student (name, score) VALUES ('Amit', 85);
+SELECT * FROM student;
+exit;
+
+# Stop and remove the container
+docker stop my-mysql
+docker rm my-mysql
+ 
+# run new sql container and check the volume exist
+docker run -d --name my-MySQL -e MYSQL_ROOT_PASSWORD=root123 -p 3306:3306 mysql:8
+docker exec -it my-mysql mysql -uroot -p
+USE cdac;
+SELECT * FROM student;
+
+# Clean the container and volume
+docker stop my-mysql
+docker rm my-mysql
+docker volume rm mysql-data
+docker volume ls
+
+#======================volume docker =========================
+#------------------- Python Application with Docker -------------------
+# Q2. Dockerfile – Python Application
+# Create a simple Python program that prints a message.
+# Write a Dockerfile to build an image and run the Python script inside a container
+
+# Step 1: Create a simple Python program
+vim app.py
+
+print("Hello from Dockerized Python Application!")
+
+# Step 2: Write a Dockerfile
+vim Dockerfile
+
+FROM	python:3.9-slim
+WORKDIR	/app
+COPY	app.py .
+CMD	["python", "app.py"]
+
+# -----------
+# Step 3: Build the Docker image
+
+docker build -t python-app .
+docker run --name my-python-app python-app
+
+# Expected Output:  Hello from Dockerized Python Application!
+
+docker ps -a
+
+
+#------------------- Q3. Java Application with Docker -------------------
+
+# Step 1: Create a simple Java program
+vim Hello.java
+
+public class Hello {
+    public static void main(String[] args) {
+        System.out.println("Hello from Dockerized Java Application!");
+    }
+}
+
+# Step 2: Write a Dockerfile
+
+vim Dockerfile
+
+FROM	openjdk:17-slim
+WORKDIR	/app
+COPY	Hello.java .
+RUN	javac Hello.java
+CMD	["java", "Hello"]
+# ----------
+# Step 3: Build the Docker image
+docker build -t java-app .
+docker run --name my-java-app java-app
+
+# Expected Output:  Hello from Dockerized Java Application!
+
+
+
+
+#------------------- Q4. MySQL with Docker Volume -------------------
+
+# Step 1: Create a Docker volume for persistent storage
+docker volume create mysql-data
+
+# Step 2: Run MySQL container with volume
+docker run -d --name my-mysql \
+  -e MYSQL_ROOT_PASSWORD=root123 \
+  -v mysql-data:/var/lib/mysql \
+  -p 3306:3306 mysql:8
+
+# Step 3: Connect to MySQL inside container
+docker exec -it my-mysql mysql -uroot -p
+
+# Step 4: Run SQL commands line by line
+CREATE DATABASE cdac;
+USE cdac;
+CREATE TABLE IF NOT EXISTS student (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100),
+  score INT
+);
+INSERT INTO student (name, score) VALUES ('Amit', 85);
+SELECT * FROM student;
+exit;
+
+# Step 5: Stop and remove the container
+docker stop my-mysql
+docker rm my-mysql
+
+# Step 6: Run new MySQL container (without volume) and check persistence
+docker run -d --name my-mysql \
+  -e MYSQL_ROOT_PASSWORD=root123 \
+  -p 3306:3306 mysql:8
+
+docker exec -it my-mysql mysql -uroot -p
+USE cdac;
+SELECT * FROM student;
+
+
+#------------------- Q5. Dockerfile – Nginx Web Server -------------------
+
+# Step 1: Create a custom HTML page
+vim index.html
+
+<html>
+  <head>
+    <title>My Nginx Page</title>
+  </head>
+  <body>
+    <h1>Hello from Dockerized Nginx!</h1>
+  </body>
+</html>
+
+# Step 2: Write a Dockerfile
+vim Dockerfile
+
+FROM	nginx:alpine
+COPY	index.html /usr/share/nginx/html/index.html
+
+
+# Step 3: Build the Docker image
+docker build -t custom-nginx .
+
+# Step 4: Run the container
+docker run -d --name my-nginx -p 8080:80 custom-nginx
+
+# Step 5: Verify output
+# Open browser and visit: http://localhost:8080
+# Expected Output: "Hello from Dockerized Nginx!"
+
+
+#------------------- Q7. Dockerfile – Shell Script Execution -------------------
+
+# Step 1: Create a shell script
+vim script.sh
+
+#!/bin/bash
+echo "Hello from Dockerized Shell Script!"
+echo "System date is: $(date)"
+
+# Step 2: Write a Dockerfile
+vim Dockerfile
+
+FROM	alpine:latest
+RUN	apk add --no-cache bash
+WORKDIR	/app
+COPY	script.sh .
+RUN	chmod +x script.sh
+CMD	["./script.sh"]
+
+# Step 3: Build the Docker image
+docker build -t shell-script-app .
+
+docker run --name my-shell-app shell-script-app
+
+# Expected Output:  Hello from Dockerized Shell Script!
+# System date is: <current date>
+
+
+#------------------- Q8. Shared Volume Between Containers -------------------
+
+# Step 1: Create a Docker volume
+docker volume create shared-data
+
+# Step 2: Run first container with shared volume
+docker run -it --name writer -v shared-data:/data alpine sh
+
+# Inside writer container, write data
+echo "Hello from Writer Container!" > /data/message.txt
+exit
+
+# Step 3: Run second container with same volume
+docker run -it --name reader -v shared-data:/data alpine sh
+
+# Inside reader container, read data
+cat /data/message.txt
+exit
+
+# Expected Output:
+# Hello from Writer Container!
+
+
