@@ -1,0 +1,47 @@
+#------------------- Create a C Program and Dockerfile -------------------
+
+# Step 1: Create project folder
+mkdir ~/docker_c_example
+cd ~/docker_c_example
+
+# Step 2: Create C program
+vim user_input.c
+
+#include <stdio.h>
+
+int main() {
+    char name[100];
+    printf("Enter your name: ");
+    scanf("%s", name);
+    printf("Hello, %s!\n", name);
+    return 0;
+}
+
+# Step 3: Create Dockerfile
+vim Dockerfile
+# ----------------------
+FROM	gcc:latest
+WORKDIR	/cdac/ditiss/mycode
+COPY	user_input.c /cdac/ditiss/mycode
+RUN	gcc -o user_input user_input.c
+CMD	["./user_input"]
+# ---------------------
+# Step 4: Build the Docker image
+docker build -t my-ditiss-c .
+
+# Step 5: Run the container interactively
+docker run -it my-ditiss-c
+#------------------- Push and Save Docker Image -------------------
+
+# Step 1: Log in to DockerHub
+docker login
+
+# Step 2: Tag the local image
+# Format: docker tag <local-image> <dockerhub-username>/<repo>:<tag>
+docker tag my-ditiss-c newdelthis/my-ditiss-c:1.0
+
+# Step 3: Push the image to DockerHub
+docker push newdelthis/my-ditiss-c:1.0
+
+# Step 4: Save the image as a backup tar file
+docker save my-ditiss-c -o cprogback.tar

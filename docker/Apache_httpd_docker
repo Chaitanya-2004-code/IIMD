@@ -1,0 +1,37 @@
+#------------------- Apache HTTPD Container Example -------------------
+
+# Step 1: Run an httpd container
+# Name: web5
+# Port mapping: host 7777 → container 80
+docker run -dit --name web5 -p 7777:80 httpd
+
+# Step 2: Create index.html on local machine
+# File: index.html
+<html>
+  <body>
+    <h1>Hello from CDAC!</h1>
+  </body>
+</html>
+
+# Step 3: Copy index.html into container
+docker cp index.html web5:/usr/local/apache2/htdocs/index.html
+
+# Step 4: Verify in browser
+# Open: http://localhost:7777
+# Expected Output: Hello from CDAC!
+
+# Step 5: Modify index.html
+# Change content to:
+<html>
+  <body>
+    <h1>Hello from DITISS!</h1>
+  </body>
+</html>
+
+# Step 6: Copy updated file into container
+docker cp index.html web5:/usr/local/apache2/htdocs/index.html
+
+# Step 7: Verify in browser again
+# Open: http://localhost:7777
+# Expected Output: Hello from DITISS!
+

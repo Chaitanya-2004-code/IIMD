@@ -1,0 +1,29 @@
+
+#------------------- Python Add Two Numbers -------------------
+
+# Step 1: Create project folder
+mkdir ~/docker_python_add
+cd ~/docker_python_add
+
+# Step 2: Create Python script
+vin add.py
+# This program takes two numbers as input and prints their sum.
+num1 = float(input("Enter the first number: "))
+num2 = float(input("Enter the second number: "))
+total = num1 + num2
+print(f"The sum is: {total}")
+
+# Step 3: Create Dockerfile
+vim Dockerfile
+# -------------------------------------------------
+FROM python:3.11-slim
+WORKDIR /myapplication
+COPY add.py /myapplication
+CMD ["python", "add.py"]
+# -------------------------------------------------
+
+# Step 4: Build the Docker image
+docker build -t python-sum-app .
+
+# Step 5: Run the container interactively
+docker run -it python-sum-app
