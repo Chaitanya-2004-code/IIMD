@@ -1,0 +1,108 @@
+#------------------- Q1. Lambda: Add Two Numbers -------------------
+# Function: Takes two numbers from test event and returns sum
+def lambda_handler(event, context):
+    num1 = event['num1']
+    num2 = event['num2']
+    return {
+        'result': num1 + num2
+    }
+
+# Test Event Example:
+{
+  "num1": 10,
+  "num2": 20
+}
+# Output: {"result": 30}
+
+
+#------------------- Q2. Lambda: Print Student Details -------------------
+# Function: Accepts name, PRN, course from test event
+def lambda_handler(event, context):
+    name = event['name']
+    prn = event['prn']
+    course = event['course']
+    print(f"Name: {name}, PRN: {prn}, Course: {course}")
+
+# Test Event Example:
+{
+  "name": "Chaitanya",
+  "prn": "123456",
+  "course": "DevOps"
+}
+
+
+#------------------- Q3. Lambda: Insert Student into DynamoDB -------------------
+import boto3
+def lambda_handler(event, context):
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('Students')
+    table.put_item(Item={
+        'PRN': event['prn'],
+        'Name': event['name'],
+        'Course': event['course']
+    })
+    return {"status": "Inserted"}
+
+
+#------------------- Q4. Lambda: Read Student from DynamoDB -------------------
+def lambda_handler(event, context):
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('Students')
+    response = table.get_item(Key={'PRN': event['prn']})
+    return response.get('Item')
+
+
+#------------------- Q5. Lambda: Update Student Course -------------------
+def lambda_handler(event, context):
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('Students')
+    table.update_item(
+        Key={'PRN': event['prn']},
+        UpdateExpression="set Course=:c",
+        ExpressionAttributeValues={':c': event['course']}
+    )
+    return {"status": "Updated"}
+
+
+#------------------- Q6. Lambda: Delete Student Record -------------------
+def lambda_handler(event, context):
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('Students')
+    table.delete_item(Key={'PRN': event['prn']})
+    return {"status": "Deleted"}
+
+
+#------------------- Q7. Lambda: Scan All Student Records -------------------
+def lambda_handler(event, context):
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('Students')
+    response = table.scan()
+    return response['Items']
+
+
+#------------------- Q8. Lambda: Check PRN Before Insert -------------------
+def lambda_handler(event, context):
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('Students')
+    response = table.get_item(Key={'PRN': event['prn']})
+    if 'Item' in response:
+        return {"status": "PRN already exists"}
+    else:
+        table.put_item(Item=event)
+        return {"status": "Inserted"}
+
+
+#------------------- Q9. Lambda: Trigger on S3 Upload -------------------
+def lambda_handler(event, context):
+    bucket = event['Records'][0]['s3']['bucket']['name']
+    key = event['Records'][0]['s3']['object']['key']
+    print(f"File uploaded: {key} in bucket: {bucket}")
+
+
+#------------------- Q10. Lambda: Print File Size on S3 Upload -------------------
+def lambda_handler(event, context):
+    bucket = event['Records'][0]['s3']['bucket']['name']
+    key = event['Records'][0]['s3']['object']['key']
+    size = event['Records'][0]['s3']['object']['size']
+    print(f"File {key} uploaded to {bucket}, Size: {size} bytes")
+

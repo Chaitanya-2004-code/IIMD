@@ -1,0 +1,178 @@
+#------------------- Q1. Create EC2 Instance and Connect -------------------
+
+# Step 1: Go to AWS Management Console → EC2 Dashboard
+# Step 2: Launch new instance
+  - Name: basic-ec2
+  - AMI: Ubuntu
+  - Instance type: t3.micro
+# Step 3: Create a new key pair
+  - Download the .pem file (used for SSH access)
+# Step 4: Create Security Group
+  - Allow SSH (port 22) from your IP
+# Step 5: Launch instance
+# Step 6: Connect to instance
+  - Use EC2 Instance Connect (browser-based)
+  - Verify connection with: `whoami` or `ls`
+
+#------------------- Q2. Create S3 Bucket and Upload File -------------------
+
+# Step 1: Go to AWS Management Console → S3
+# Step 2: Create new bucket
+  - Name: my-basic-bucket-001 (must be globally unique)
+# Step 3: Open the bucket
+# Step 4: Upload file (example: index.html)
+<html>
+  <body>
+    <h1>Hello from S3!</h1>
+  </body>
+</html>
+# Step 5: Click on file → Copy Object URL
+# Step 6: Make object public (if required)
+# Step 7: Access file in browser using Object URL
+
+#------------------- Q3. Create VPC with Public Subnet -------------------
+
+# Step 1: Go to AWS Management Console → VPC
+# Step 2: Create new VPC
+  - Name: my-vpc
+  - CIDR: 10.0.0.0/16
+# Step 3: Create Subnet
+  - Name: public-subnet
+  - CIDR: 10.0.1.0/24
+  - Associate with my-vpc
+# Step 4: Create Internet Gateway
+  - Name: my-igw
+  - Attach to my-vpc
+# Step 5: Create Route Table
+  - Associate with my-vpc
+  - Add route: 0.0.0.0/0 → Internet Gateway
+# Step 6: Associate Route Table with public-subnet
+# Step 7: Verify configuration
+  - Subnet should now have internet access
+#------------------- Q4. Launch EC2 Inside Your VPC -------------------
+
+# Step 1: Go to AWS Management Console → EC2 Dashboard
+# Step 2: Launch new instance
+  - Name: vpc-ec2
+  - AMI: Ubuntu
+  - Instance type: t3.micro
+# Step 3: Select custom VPC
+  - VPC: my-vpc
+  - Subnet: public-subnet
+# Step 4: Enable Auto-assign Public IP
+# Step 5: Create Security Group
+  - Allow SSH (22) from your IP
+  - Allow HTTP (80) from anywhere (0.0.0.0/0)
+# Step 6: Launch instance
+# Step 7: Connect using EC2 Instance Connect (browser)
+
+#------------------- Q5. Attach IAM Role to EC2 and Access S3 -------------------
+
+# Step 1: Go to AWS Management Console → IAM
+# Step 2: Create new Role
+  - Use case: EC2
+  - Attach policy: AmazonS3FullAccess
+# Step 3: Go to EC2 Dashboard → Select instance
+# Step 4: Actions → Security → Modify IAM Role
+  - Attach the newly created role
+# Step 5: Verification
+  - Connect to EC2 terminal
+  - Run command:
+    aws s3 ls
+  - Expected output: List of S3 buckets accessible with the role
+
+#------------------- Q6. Create Private Subnet + EC2 (No Internet) -------------------
+
+# Step 1: Go to AWS Management Console → VPC
+# Step 2: Create new Subnet
+  - Name: private-subnet
+  - CIDR: 10.0.2.0/24
+  - Associate with my-vpc
+# Step 3: Create Route Table
+  - Name: private-rt
+  - Associate with my-vpc
+  - Do NOT add Internet Gateway route
+# Step 4: Associate Route Table with private-subnet
+# Step 5: Launch EC2 instance
+  - Name: private-ec2
+  - Subnet: private-subnet
+  - Disable Auto-assign Public IP
+# Step 6: Create Security Group
+  - Allow SSH only from VPC CIDR (10.0.0.0/16)
+# Step 7: Launch instance
+# Step 8: Verification
+  - Instance will not have internet access
+  - Accessible only from within the VPC (e.g., via Bastion Host)
+
+
+
+#------------------- Q7. Create Bastion Host (Jump Server) -------------------
+
+# Step 1: Launch Bastion EC2 Instance
+- Go to EC2 → Launch Instance
+- Name: bastion-host
+- AMI: Ubuntu
+- Instance type: t3.micro
+- Network: Select VPC → my-vpc
+- Subnet: public-subnet
+- Enable Auto-assign Public IP
+
+# Step 2: Configure Security Group (Bastion SG)
+- Allow SSH (port 22) from your IP only
+- Attach this SG to bastion-host
+
+# Step 3: Modify Private EC2 Security Group
+- Go to Security Groups → private-ec2 SG
+- Edit inbound rules:
+  - Allow SSH (port 22)
+  - Source: Bastion Security Group (not IP address)
+
+# Step 4: Launch bastion-host instance
+- Verify it has a public IP
+- Connect using EC2 Instance Connect or SSH
+
+
+#------------------- Q8. Verify Private Access via Bastion -------------------
+
+# Step 1: Connect to Bastion Host
+ssh -i bastion-key.pem ubuntu@<bastion-public-ip>
+
+# Step 2: From Bastion, connect to Private EC2
+ssh -i private-key.pem ubuntu@<private-ec2-private-ip>
+
+# Step 3: Observation
+- Private EC2 has no public IP
+- Access is possible only through Bastion host
+
+
+#------------------- Q9. Create Two IAM Users (Access vs No Access) -------------------
+
+# Step 1: Go to AWS Management Console → IAM → Users
+# Step 2: Create User1
+- Name: s3-user-allowed
+- Enable console access
+- Attach policy: AmazonS3FullAccess
+
+# Step 3: Create User2
+- Name: s3-user-denied
+- Enable console access
+- Do not attach any policy
+
+
+#------------------- Q10. Test S3 Access (Permission Check) -------------------
+
+# Step 1: Login as User1 (s3-user-allowed)
+- Go to S3
+- Upload file (e.g., test.html)
+- Should succeed
+
+# Step 2: Login as User2 (s3-user-denied)
+- Go to S3
+- Try to upload file
+- Should fail with "Access Denied"
+
+# Step 3: Observation
+- IAM policies control permissions
+- User1 has full S3 access
+- User2 has no S3 access
+
