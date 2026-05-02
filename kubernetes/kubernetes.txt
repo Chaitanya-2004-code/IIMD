@@ -1,0 +1,216 @@
+#------------------- Q1. Kubernetes: Run Apache Pod -------------------
+
+# Step 1: Create Apache Pod using httpd image
+kubectl run apache-pod --image=httpd
+
+# Step 2: Verify Pod
+kubectl get pods
+kubectl describe pod apache-pod
+
+
+#------------------- Q2. Kubernetes: Apache Deployment -------------------
+
+# Step 1: Create Apache Deployment using httpd image
+kubectl create deployment apache-deployment --image=httpd
+
+# Step 2: Verify Deployment and Pods
+kubectl get deployments
+kubectl get pods
+
+
+#------------------- Q3. Kubernetes: Increase and Decrease Replicas -------------------
+
+# Step 1: Scale Deployment to 4 replicas
+kubectl scale deployment apache-deployment --replicas=4
+
+# Step 2: Verify ReplicaSet and Pods
+kubectl get rs
+kubectl get pods
+
+# Step 3: Scale Deployment back to 2 replicas
+kubectl scale deployment apache-deployment --replicas=2
+
+# Step 4: Verify changes
+kubectl get rs
+kubectl get pods
+
+
+#------------------- Q4. Kubernetes: Use YAML File -------------------
+
+# Step 1: Write YAML file for Apache Deployment
+# File: apache-deployment.yaml
+# -------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apache-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: apache
+  template:
+    metadata:
+      labels:
+        app: apache
+    spec:
+      containers:
+      - name: apache-container
+        image: httpd
+        ports:
+        - containerPort: 80
+# ------------------------
+
+# Step 2: Apply YAML file
+kubectl apply -f apache-deployment.yaml
+
+# Step 3: Verify resources
+kubectl get deployments
+kubectl get pods
+kubectl describe deployment apache-deployment
+
+
+
+#------------------- Q5. Kubernetes: ClusterIP Service -------------------
+
+# Step 1: Expose Apache Deployment using ClusterIP
+kubectl expose deployment apache-deployment \
+  --name=apache-clusterip \
+  --type=ClusterIP \
+  --port=80
+
+# Step 2: Verify Service
+kubectl get svc apache-clusterip
+
+# Step 3: Test service access inside cluster
+kubectl run test-pod --rm -it --image=busybox -- /bin/sh
+wget -qO- apache-clusterip:80
+
+
+#------------------- Q6. Kubernetes: NodePort Service -------------------
+
+# Step 1: Expose Apache Deployment using NodePort
+kubectl expose deployment apache-deployment \
+  --name=apache-nodeport \
+  --type=NodePort \
+  --port=80
+
+# Step 2: Verify Service
+kubectl get svc apache-nodeport
+
+# Step 3: Access Apache from browser
+# Format: http://<node-ip>:<node-port>
+# Example: http://localhost:30080
+
+
+#------------------- Q7. Kubernetes: LoadBalancer Service -------------------
+
+# Step 1: Expose Apache Deployment using LoadBalancer
+kubectl expose deployment apache-deployment \
+  --name=apache-loadbalancer \
+  --type=LoadBalancer \
+  --port=80
+
+# Step 2: Verify Service and External IP
+kubectl get svc apache-loadbalancer
+
+# Step 3: Access Apache using external IP
+# Example: http://<external-ip>:80
+
+
+#------------------- Q8. Kubernetes: Flask Application Deployment -------------------
+
+# Step 1: Create Flask app
+vim  app.py
+
+from flask import Flask
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "PRN: 123456789, Name: Chaitanya"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
+# Step 2: Create Dockerfile
+# --------------------------
+vim Dockerfile
+
+FROM	python:3.11-slim
+WORKDIR	/app
+COPY	app.py .
+RUN	pip install flask
+CMD	["python", "app.py"]
+# -------------------------------------------------
+
+# Step 3: Build Docker image
+docker build -t flask-app .
+
+# Step 4: Push image to registry (optional)
+docker tag flask-app <dockerhub-username>/flask-app:1.0
+docker push <dockerhub-username>/flask-app:1.0
+
+# Step 5: Create Kubernetes Deployment
+kubectl create deployment flask-deployment --image=<dockerhub-username>/flask-app:1.0
+
+# Step 6: Expose Deployment as Service
+kubectl expose deployment flask-deployment \
+  --name=flask-service \
+  --type=NodePort \
+  --port=5000
+
+# Step 7: Verify resources
+kubectl get deployments
+kubectl get pods
+kubectl get svc flask-service
+
+# Step 8: Access Flask app in browser
+# Format: http://<node-ip>:<node-port>
+# Expected Output: PRN: 123456789, Name: Chaitanya
+
+
+#------------------- Q9. Kubernetes: Rolling Update Flask Application -------------------
+
+# Step 1: Modify Flask app output
+vim app.py
+
+from flask import Flask
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "PRN: 123456789, Name: Chaitanya, Course: DevOps with Kubernetes"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
+# Step 2: Create new Docker image version
+# Dockerfile remains the same
+# ---------------------
+vim Dockerfile
+
+FROM	python:3.11-slim
+WORKDIR	/app
+COPY	app.py .
+RUN	pip install flask
+CMD	["python", "app.py"]
+# -----------------------
+
+# Build new image
+docker build -t <dockerhub-username>/flask-app:2.0 .
+
+# Push to DockerHub
+docker push <dockerhub-username>/flask-app:2.0
+
+# Step 3: Update Kubernetes Deployment with new image
+kubectl set image deployment/flask-deployment \
+  flask-container=<dockerhub-username>/flask-app:2.0
+
+# Step 4: Verify rolling update status
+kubectl rollout status deployment/flask-deployment
+
+# Step 5: Access updated output in browser
+# Format: http://<node-ip>:<node-port>
+# Expected Output: PRN: 123456789, Name: Chaitanya, Course: DevOps with Kubernetes
+

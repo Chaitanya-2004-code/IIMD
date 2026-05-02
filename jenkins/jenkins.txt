@@ -1,0 +1,171 @@
+#------------------- Assignment 7: Jenkins, Docker, Kubernetes -------------------
+
+#-------------------------- 1. Java Application with Jenkins Pipeline------------------
+# Step 1: Create simple Java Hello World program
+vim  Hello.java
+
+public class Hello {
+    public static void main(String[] args) {
+        System.out.println("Hello World from Jenkins!");
+    }
+}
+
+# Step 2: Push source code to GitHub repository
+
+# Step 3: Create Jenkins Pipeline job
+# Jenkinsfile (basic stages)
+
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/<username>/<repo>.git'
+            }
+        }
+        stage('Compile') {
+            steps {
+                sh 'javac Hello.java'
+            }
+        }
+        stage('Run') {
+            steps {
+                sh 'java Hello'
+            }
+        }
+    }
+}
+
+# Verify output in Jenkins console: "Hello World from Jenkins!"
+
+
+#-========================== 2. Docker Image Creation using Jenkins=============
+# Step 1: Create Dockerfile
+# -----------------------
+vim Dockerfile
+
+FROM	openjdk:17-slim
+WORKDIR	/app
+COPY	Hello.java .
+RUN	javac Hello.java
+CMD	["java", "Hello"]
+# ----------------------
+
+# Step 2: Update Jenkinsfile to build Docker image
+
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps { git 'https://github.com/<username>/<repo>.git' }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t hello-java-app .'
+            }
+        }
+        stage('Run Container') {
+            steps {
+                sh 'docker run --rm hello-java-app'
+            }
+        }
+    }
+}
+
+# Verify container output in Jenkins console.
+
+
+# ==================== 3. Push Docker Image to DockerHub  ===============
+
+# Step 1: Configure DockerHub credentials in Jenkins (Manage Credentials)
+
+# Step 2: Extend Jenkinsfile to tag and push image
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps { git 'https://github.com/<username>/<repo>.git' }
+        }
+        stage('Build Docker Image') {
+            steps { sh 'docker build -t hello-java-app .'}
+        }
+        stage('Tag & Push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                    sh 'docker tag hello-java-app <dockerhub-username>/hello-java-app:1.0'
+                    sh 'docker push <dockerhub-username>/hello-java-app:1.0'
+                }
+            }
+        }
+    }
+}
+
+# Verify image on DockerHub.
+
+
+# ==========================  4. Deploy Application to Kubernetes using Jenkins =======
+# Step 1: Create Kubernetes YAML files
+
+vim deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      containers:
+      - name: hello-container
+        image: <dockerhub-username>/hello-java-app:1.0
+        ports:
+        - containerPort: 8080
+----------------------------------
+# File: service.yaml
+
+vim service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-service
+spec:
+  selector:
+    app: hello
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: NodePort
+
+# Step 2: Extend Jenkinsfile to deploy to Kubernetes
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps { git 'https://github.com/<username>/<repo>.git' }
+        }
+        stage('Deploy to Kubernetes') {
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig-creds']) {
+                    sh 'kubectl apply -f deployment.yaml'
+                    sh 'kubectl apply -f service.yaml'
+                    sh 'kubectl get pods'
+                }
+            }
+        }
+    }
+}
+
+# Step 3: Verify pod is running successfully
+kubectl get pods
+kubectl describe pod <pod-name>
+
