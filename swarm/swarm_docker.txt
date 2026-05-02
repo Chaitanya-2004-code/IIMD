@@ -60,7 +60,7 @@ docker service ps nginx-service
 docker service rm nginx-service
 
 
-#------------------- Alpine Hello World -------------------
+#------- Alpine Hello World -------------------
 
 # Run an Alpine container that prints Hello World
 docker run --rm alpine sh -c "echo 'hello world'"
@@ -68,4 +68,144 @@ docker run --rm alpine sh -c "echo 'hello world'"
 
 
 
+#------------------- Q1. Docker Swarm: Nginx Service -------------------
+
+# Step 1: Initialize Docker Swarm
+docker swarm init
+
+# Step 2: Create Nginx ser#!/bin/bash
+# Install Google Chrome and Firefox on Ubuntu
+# This script adds Chrome to Applications automatically
+
+set -e
+
+echo "Updating package index..."
+sudo apt update -y
+
+echo "Installing prerequisites..."
+sudo apt install -y wget gnupg software-properties-common apt-transport-https
+
+# --- Install Google Chrome ---
+echo "Downloading Google Chrome .deb package..."
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O /tmp/google-chrome.deb
+
+echo "Installing Google Chrome..."
+sudo dpkg -i /tmp/google-chrome.deb || sudo apt -f install -y
+
+# --- Install Firefox ---
+echo "Installing Firefox..."
+sudo apt install -y firefox
+
+# --- Cleanup ---
+rm /tmp/google-chrome.deb
+
+echo "Installation complete!"
+echo "You can now find Google Chrome and Firefox in your Applications menu."
+vice
+# Service name: nginx-service
+# Image: nginx
+# Replicas: 2
+# Expose container port 80 on host port 8080
+docker service create --name nginx-service --replicas 2 -p 8080:80 nginx
+
+# Step 3: Verify service
+docker service ls
+docker service ps nginx-service
+
+# Step 4: Access Nginx in browser
+# Open: http://localhost:8080
+# Expected Output: Default Nginx welcome page
+
+#------------------- Q2. Docker Swarm: Python Worker Service -------------------
+
+# Step 1: Create Python script
+vim app.py
+import time
+while True:
+    print("Running in Swarm...")
+    time.sleep(5)
+
+# Step 2: Create Dockerfile
+# ----------------
+vim Dockerfile
+
+FROM python:3.11-slim
+WORKDIR /app
+COPY app.py .
+CMD ["python", "app.py"]
+# -------------------------------------------------
+
+# Step 3: Build Docker image
+docker build -t python-worker-app .
+
+# Step 4: Deploy service in Swarm
+docker swarm init
+docker service create --name python-service --replicas 3 python-worker-app
+
+# Step 5: Check logs from different containers
+docker service ps python-service
+docker logs <container_id>
+
+# Expected Output (repeated every 5 seconds):
+# Running in Swarm...
+
+# Step 6: Verify task distribution
+docker service ps python-service
+
+
+#------------------- Q3. Docker Swarm: Scaling Service -------------------
+
+# Step 1: Deploy Nginx service with 2 replicas
+docker service create --name nginx-service --replicas 2 -p 8080:80 nginx
+
+# Step 2: Scale service to 5 replicas
+docker service scale nginx-service=5
+
+# Step 3: Verify replicas
+docker service ls
+docker service ps nginx-service
+
+# Step 4: Scale service back to 1 replica
+docker service scale nginx-service=1
+
+# Step 5: Observe container changes
+docker service ps nginx-service
+# (Extra replicas will be terminated, only 1 remains active)
+
+
+#------------------- Q4. Docker Swarm: Rolling Update -------------------
+
+# Step 1: Deploy service using nginx:1.25 image
+docker service create --name rolling-nginx -p 8080:80 nginx:1.25
+
+# Step 2: Update service to nginx:latest with rolling update options
+docker service update \
+  --image nginx:latest \
+  --update-parallelism 1 \
+  --update-delay 10s \
+  rolling-nginx
+
+# Step 3: Verify update status
+docker service ps rolling-nginx
+
+# Step 4: Roll back service if needed
+docker service update --rollback rolling-nginx
+
+#------------------- Q5. Docker Swarm: Remove Service and Leave Swarm -------------------
+
+# Step 1: List all running services
+docker service ls
+
+# Step 2: Remove nginx-service
+docker service rm nginx-service
+
+# Step 3: Remove python-service
+docker service rm python-service
+
+# Step 4: Verify services aare deleted
+docker service ls
+# (No services should be listed)
+
+# Step 5: Leave Docker Swarm mode
+docker swarm leave --force
 
